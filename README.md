@@ -6,13 +6,21 @@ github release、archive以及项目文件的加速项目，支持clone，有Clo
 
 ## 演示
 
+演示站为公共服务，如有大规模使用需求请自行部署
+
+### 原仓库演示（使用 Worker）
+
 [https://gh.api.99988866.xyz/](https://gh.api.99988866.xyz/)
 
-演示站为公共服务，如有大规模使用需求请自行部署，演示站有点不堪重负
+原仓库演示站有点不堪重负
 
 ![imagea272c95887343279.png](https://img.maocdn.cn/img/2021/04/24/imagea272c95887343279.png)
 
-当然也欢迎[捐赠](#捐赠)以支持作者
+当然也欢迎[捐赠](#捐赠)以支持原作者
+
+### 本仓库新增演示（Python 源码）
+
+[https://ghmirror.pp.ua](https://ghmirror.pp.ua)
 
 ## python版本和cf worker版本差异
 
@@ -60,7 +68,7 @@ github release、archive以及项目文件的加速项目，支持clone，有Clo
 
 ## Python版本部署
 
-### Docker部署
+### Docker部署（这是原仓库版本，本仓库的版本没有构建）
 
 ```
 docker run -d --name="gh-proxy-py" \
@@ -73,9 +81,10 @@ docker run -d --name="gh-proxy-py" \
 
 ### 直接部署
 
-安装依赖（请使用python3）
-
-```pip install flask requests```
+``````
+chmod +x run_app.sh
+./run_app.sh
+``````
 
 按需求修改`app/main.py`的前几项配置
 
@@ -87,9 +96,9 @@ if 'Transfer-Encoding' in headers:
 
 ### 注意
 
-python版本的机器如果无法正常访问github.io会启动报错，请自行修改静态文件url
+python 版本的机器如果无法正常访问 github.io 会启动报错，请自行修改静态文件 url
 
-python版本默认走服务器（2021.3.27更新）
+python 版本默认走服务器（2021.3.27更新）
 
 ## Cloudflare Workers计费
 
@@ -99,6 +108,7 @@ python版本默认走服务器（2021.3.27更新）
 
 ## Changelog
 
+* 2023.12.01 增加环境比变量支持，指定从仓库更新黑名单
 * 2020.04.10 增加对`raw.githubusercontent.com`文件的支持
 * 2020.04.09 增加Python版本（使用Flask）
 * 2020.03.23 新增了clone的支持
@@ -106,13 +116,4 @@ python版本默认走服务器（2021.3.27更新）
 
 ## 链接
 
-[我的博客](https://hunsh.net)
-
-## 参考
-
-[jsproxy](https://github.com/EtherDream/jsproxy/)
-
-## 捐赠
-
-![wx.png](https://img.maocdn.cn/img/2021/04/24/image.md.png)
-![ali.png](https://www.helloimg.com/images/2021/04/24/BK9vmb.md.png)
+[我的博客](https://hunsh.net) [jsproxy](https://github.com/EtherDream/jsproxy/)
