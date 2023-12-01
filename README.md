@@ -16,7 +16,7 @@ github release、archive以及项目文件的加速项目，支持clone，有Clo
 
 ![imagea272c95887343279.png](https://img.maocdn.cn/img/2021/04/24/imagea272c95887343279.png)
 
-当然也欢迎[捐赠](#捐赠)以支持原作者
+当然也欢迎[捐赠](https://github.com/hunshcn/gh-proxy#捐赠)以支持原作者
 
 ### 本仓库新增演示（Python 源码）
 
