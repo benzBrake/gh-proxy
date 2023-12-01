@@ -18,6 +18,22 @@ app_directory="$script_dir/app"
 app_script="main.py"
 log_file="$script_dir/app.log"
 
+# 是否后台运行标志
+run_in_background=true
+
+# 检查参数
+for arg in "$@"; do
+    case "$arg" in
+        --forceground)
+            run_in_background=false
+            ;;
+        --debug)
+            xport DEBUG_MODE=1
+            run_in_background=false  # 强制前台运行
+            ;;
+    esac
+done
+
 proc_list() {
     # 检测进程是否已经运行
     echo Process List:
@@ -66,7 +82,10 @@ source "$venv_dir/bin/activate"
 # 安装依赖项
 pip install -r "$requirements_file"
 
-# 使用 screen 启动 Flask 应用程序
-nohup python "$app_directory/$app_script" >> "$log_file" 2>&1 &
-
-proc_list
+# 启动 Flask 应用程序
+if [ "$run_in_background" == true ]; then
+    nohup python "$app_directory/$app_script" >> "$log_file" 2>&1 &
+    proc_list
+else
+    python "$app_directory/$app_script"
+fi

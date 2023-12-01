@@ -2,7 +2,9 @@
 import os
 import re
 import socket
+import sys
 import requests
+import logging
 from flask import Flask, Response, redirect, request
 from requests.exceptions import (
     ChunkedEncodingError,
@@ -27,6 +29,8 @@ def is_valid_ip(ip):
             return False
     return True
 
+# 添加对 ENV_DEBUG_MODE 环境变量的支持
+ENV_DEBUG_MODE = int(os.getenv('DEBUG_MODE', 0))
 ENV_JSDELIVR = int(os.getenv('ENABLE_JSDELIVR', 0))
 ENV_JSDELIVR_MIRROR = sanitize_mirror_url(os.getenv('SDELIVR_MIRROR', 'cdn.jsdelivr.net'))
 ENV_SIZE_LIMIT = int(os.getenv('SIZE_LIMIT', 1024 * 1024 * 1024 * 999))
@@ -34,20 +38,41 @@ HOST = os.getenv('HOST', '127.0.0.1')
 PORT = int(os.getenv('PORT', 80))
 ASSET_URL = os.getenv('ASSET_URL', 'https://hunshcn.github.io/gh-proxy')
 
+# 根据 ENV_DEBUG_MODE 配置日志级别
+if ENV_DEBUG_MODE:
+    logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',
+                        level=logging.DEBUG)
+else:
+    logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',
+                        level=logging.INFO)
+
 if not is_valid_ip(HOST):
     raise ValueError(f'Invalid IP address: {HOST}')
 
-def fetch_rules_list(url):
+def download_rules_list(env_var_name, local_filename):
+    url = os.getenv(env_var_name)
+    if not url:
+        print(f"Environment variable {env_var_name} not set. Using an empty list.")
+        return ''
+
+    if os.path.exists(local_filename):
+        with open(local_filename, 'r') as file:
+            return [tuple([x.replace(' ', '') for x in line.split('/')]) for line in file.readlines() if line]
+
     response = requests.get(url)
     if response.status_code == 200:
-        return [tuple([x.replace(' ', '') for x in line.split('/')]) for line in response.text.split('\n') if line]
+        rules = [tuple([x.replace(' ', '') for x in line.split('/')]) for line in response.text.split('\n') if line]
+        with open(local_filename, 'w') as file:
+            file.write('\n'.join('/'.join(rule) for rule in rules))
+        return rules
     else:
         print(f"Failed to fetch rules list from {url}. Using an empty list.")
         return []
 
-whitelist_rules = fetch_rules_list('https://github.com/benzBrake/gh-proxy/raw/master/whitelist_rules')
-blacklist_rules = fetch_rules_list('https://github.com/benzBrake/gh-proxy/raw/master/blacklist_rules')
-passlist_rules = fetch_rules_list('https://github.com/benzBrake/gh-proxy/raw/master/passlist_rules')
+
+whitelist_rules = download_rules_list('WHITELIST_RULES_URL', 'https://github.com/benzBrake/gh-proxy/raw/master/whitelist_rules')
+blacklist_rules = download_rules_list('BLACKLIST_RULES_URL', '')
+passlist_rules = download_rules_list('PASSLIST_RULES_URL', '')
 
 app = Flask(__name__)
 CHUNK_SIZE = 1024 * 10
@@ -60,6 +85,9 @@ exp4 = re.compile(r'^(?:https?://)?raw\.(?:githubusercontent|github)\.com/(?P<au
 exp5 = re.compile(r'^(?:https?://)?gist\.(?:githubusercontent|github)\.com/(?P<author>.+?)/.+?/.+$')
 
 requests.sessions.default_headers = lambda: CaseInsensitiveDict()
+
+logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',
+                    level=logging.DEBUG)
 
 @app.route('/')
 def index():
@@ -169,6 +197,8 @@ def proxy(u, allow_redirects=False):
         url = u + request.url.replace(request.base_url, '', 1)
         if url.startswith('https:/') and not url.startswith('https://'):
             url = 'https://' + url[7:]
+
+        logging.info('proxy: %s' % url)
         r = requests.request(method=request.method, url=url, data=request.data, headers=r_headers, stream=True, allow_redirects=allow_redirects)
         headers = dict(r.headers)
 
@@ -191,6 +221,6 @@ def proxy(u, allow_redirects=False):
         headers['content-type'] = 'text/html; charset=UTF-8'
         return Response('server error ' + str(e), status=500, headers=headers)
 
-app.debug = True
+app.debug = ENV_DEBUG_MODE == 1
 if __name__ == '__main__':
     app.run(host=HOST, port=PORT)
