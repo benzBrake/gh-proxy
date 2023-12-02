@@ -49,30 +49,30 @@ else:
 if not is_valid_ip(HOST):
     raise ValueError(f'Invalid IP address: {HOST}')
 
-def download_rules_list(env_var_name, local_filename):
-    url = os.getenv(env_var_name)
-    if not url:
-        print(f"Environment variable {env_var_name} not set. Using an empty list.")
-        return ''
+def download_rules_list(env_var_name, local_filename, url=None):
+    if url and not os.path.exists(local_filename):
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # 抛出异常如果请求不成功
+            rules = [tuple([x.replace(' ', '') for x in line.strip().split('/')]) for line in response.text.split('\n') if line]
+            with open(local_filename, 'w') as file:
+                file.write('\n'.join('/'.join(rule) for rule in rules))
+            return rules
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to fetch rules list from {url}: {e}. Using an empty list.")
+            return []
 
     if os.path.exists(local_filename):
         with open(local_filename, 'r') as file:
-            return [tuple([x.replace(' ', '') for x in line.split('/')]) for line in file.readlines() if line]
+            return [tuple([x.replace(' ', '') for x in line.strip().split('/')]) for line in file.readlines() if line]
 
-    response = requests.get(url)
-    if response.status_code == 200:
-        rules = [tuple([x.replace(' ', '') for x in line.split('/')]) for line in response.text.split('\n') if line]
-        with open(local_filename, 'w') as file:
-            file.write('\n'.join('/'.join(rule) for rule in rules))
-        return rules
-    else:
-        print(f"Failed to fetch rules list from {url}. Using an empty list.")
-        return []
+    print(f"Local file {local_filename} not found. Using an empty list.")
+    return []
 
 
-whitelist_rules = download_rules_list('WHITELIST_RULES_URL', 'https://github.com/benzBrake/gh-proxy/raw/master/whitelist_rules')
-blacklist_rules = download_rules_list('BLACKLIST_RULES_URL', '')
-passlist_rules = download_rules_list('PASSLIST_RULES_URL', '')
+whitelist_rules = download_rules_list('WHITELIST_RULES_URL', 'whitelist')
+blacklist_rules = download_rules_list('BLACKLIST_RULES_URL', 'blacklist', 'https://github.com/benzBrake/gh-proxy/raw/master/blacklist_rules')
+passlist_rules = download_rules_list('PASSLIST_RULES_URL', 'passlist')
 
 app = Flask(__name__)
 CHUNK_SIZE = 1024 * 10
@@ -83,7 +83,6 @@ exp2 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:
 exp3 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:info|git-).*$')
 exp4 = re.compile(r'^(?:https?://)?raw\.(?:githubusercontent|github)\.com/(?P<author>.+?)/(?P<repo>.+?)/.+?/.+$')
 exp5 = re.compile(r'^(?:https?://)?gist\.(?:githubusercontent|github)\.com/(?P<author>.+?)/.+?/.+$')
-exp6 = re.compile(r'^(?:https?://)?api\.github\.com/(?P<endpoint>.+)$')
 
 requests.sessions.default_headers = lambda: CaseInsensitiveDict()
 
@@ -136,7 +135,7 @@ def iter_content(self, chunk_size=1, decode_unicode=False):
     return chunks
 
 def check_url(u):
-    for exp in (exp1, exp2, exp3, exp4, exp5, exp6):
+    for exp in (exp1, exp2, exp3, exp4, exp5):
         m = exp.match(u)
         if m:
             return m
