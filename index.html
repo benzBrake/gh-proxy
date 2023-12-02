@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+  <style>
+    html,
+    body {
+      width: 100%;
+      margin: 0;
+      background-color: #f8f9fa; /* Bootstrap light gray background */
+      color: #495057; /* Bootstrap dark text color */
+    }
+
+    html {
+      height: 100%;
+    }
+
+    body {
+      min-height: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    p {
+      word-break: break-all;
+    }
+
+    @media (max-width: 500px) {
+      h1 {
+        margin-top: 80px;
+      }
+    }
+
+    .flex {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .block {
+      display: block;
+      position: relative;
+    }
+
+    .url {
+      font-size: 18px;
+      padding: 10px 10px 10px 5px;
+      position: relative;
+      width: 300px;
+      border: none;
+      border-bottom: 1px solid #007bff; /* Bootstrap primary color */
+    }
+
+    :not([is-empty="true"]) > .url:invalid {
+      border-bottom: 1px solid #dc3545; /* Bootstrap danger color */
+    }
+
+    input:focus {
+      outline: none;
+    }
+
+    .bar {
+      content: "";
+      height: 2px;
+      width: 100%;
+      bottom: 0;
+      position: absolute;
+      background: #007bff; /* Bootstrap primary color */
+      transition: 0.2s ease transform;
+      -moz-transition: 0.2s ease transform;
+      -webkit-transition: 0.2s ease transform;
+      transform: scaleX(0);
+    }
+
+    :not([is-empty="true"]) > .url:invalid ~ .bar {
+      background: #dc3545;
+    }
+
+    .url:focus ~ .bar {
+      transform: scaleX(1);
+    }
+
+    .btn {
+      line-height: 38px;
+      background-color: #007bff; /* Bootstrap primary color */
+      color: #fff;
+      white-space: nowrap;
+      text-align: center;
+      font-size: 14px;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      padding: 5px;
+      width: 160px;
+      margin: 30px 0;
+      transition: all 0.2s ease-in-out;
+    }
+
+    [is-empty="true"] ~ .btn,
+    [is-invalid="true"] ~ .btn {
+      cursor: not-allowed;
+      pointer-events: none;
+      opacity: 0.3;
+    }
+
+    .tips,
+    .example {
+      color: #6c757d; /* Bootstrap secondary text color */
+      position: relative;
+      align-self: flex-start;
+      margin-left: 7.5em;
+    }
+
+    .tips > p:first-child::before {
+      position: absolute;
+      left: -3em;
+      content: "PS：";
+      color: #6c757d; /* Bootstrap secondary text color */
+    }
+
+    .example > p:first-child::before {
+      position: absolute;
+      left: -7.5em;
+      content: "合法输入示例：";
+      color: #6c757d; /* Bootstrap secondary text color */
+    }
+
+    .not-supported {
+      color: #721c24; /* Bootstrap danger text color */
+      background-color: #f8d7da; /* Bootstrap danger background color */
+      border: 1px solid #f5c6cb; /* Bootstrap danger border color */
+      padding: 10px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+  </style>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>GitHub 文件加速</title>
+  </head>
+  <body class="flex">
+    <h1 style="margin-bottom: 50px">GitHub 文件加速</h1>
+    <form
+      action="./"
+      method="get"
+      style="padding-bottom: 40px"
+      target="_blank"
+      class="flex"
+      onsubmit="toSubmit(event)"
+    >
+      <label class="block" style="width: fit-content">
+        <input
+          class="block url"
+          name="q"
+          type="text"
+          placeholder="键入Github文件链接"
+          pattern="^((https|http):\/\/)?(github\.com\/.+?\/.+?\/(?:releases|archive|blob|raw|suites)|(api\.github\.com\/(?:repos|users))|((?:raw|gist)\.(?:githubusercontent|github)\.com))\/.+$"
+          oninput="updateAttrs()"
+          required
+        />
+        <!-- https://regex101.com/r/pnsZ2w/1 -->
+        <div class="bar"></div>
+      </label>
+      <input class="block btn" type="submit" value="下载" />
+      <div class="tips">
+        <p>
+          GitHub文件链接带不带协议头都可以，支持release、archive以及文件，右键复制出来的链接都是符合标准的，更多用法、clone加速请参考<a
+            href="https://hunsh.net/archives/23/"
+            >这篇文章</a
+          >。
+        </p>
+        <p>release、archive使用cf加速，文件会跳转至JsDelivr（如果配置了）</p>
+        <div class="not-supported">
+          不支持项目文件夹<span class="text-muted"
+            >（Using Bootstrap danger styles）</span
+          >
+        </div>
+      </div>
+      <div class="example">
+        <p>
+          分支源码：https://github.com/benzBrake/FirefoxCustomize/archive/refs/heads/master.zip
+        </p>
+        <p>
+          release源码：https://github.com/black7375/Firefox-UI-Fix/archive/refs/tags/v8.5.0.tar.gz
+        </p>
+        <p>
+          release文件：https://github.com/yt-dlp/yt-dlp/releases/download/2023.11.16/yt-dlp.exe
+        </p>
+        <p>分支文件：https://github.com/hunshcn/project/blob/master/filename</p>
+        <p>Github API：https://api.github.com/users/benzBrake</p>
+      </div>
+    </form>
+    <p style="position: sticky; top: calc(100% - 2.5em)">
+      项目使用 Cloudflare CDN 加速，开源于GitHub
+      <a style="color: #3294ea" href="https://github.com/benzBrake/gh-proxy"
+        >benzBrake/gh-proxy</a
+      >
+    </p>
+    <script>
+      let url = document.querySelector(".url");
+      updateAttrs();
+      function updateAttrs() {
+        url.parentNode.setAttribute("is-invalid", !url.checkValidity());
+        url.parentNode.setAttribute("is-empty", url.value === "");
+      }
+      function toSubmit(e) {
+        e.preventDefault();
+        window.open(
+          location.href.substr(0, location.href.lastIndexOf("/") + 1) +
+            document.getElementsByName("q")[0].value
+        );
+        return false;
+      }
+    </script>
+  </body>
+</html>
