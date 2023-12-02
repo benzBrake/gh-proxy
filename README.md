@@ -108,6 +108,7 @@ python 版本默认走服务器（2021.3.27更新）
 
 ## Changelog
 
+* 2023.12.02 增加对`api.github.com`的部分支持
 * 2023.12.01 增加环境变量支持，指定从仓库更新黑名单（仅 Python 版本支持）
 * 2020.04.10 增加对`raw.githubusercontent.com`文件的支持
 * 2020.04.09 增加Python版本（使用Flask）
