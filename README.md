@@ -115,6 +115,8 @@ python 版本默认走服务器（2021.3.27更新）
 * 2020.03.23 新增了clone的支持
 * 2020.03.22 初始版本
 
-## 链接
+## 感谢
 
-[我的博客](https://hunsh.net) [jsproxy](https://github.com/EtherDream/jsproxy/)
+[原作者](https://hunsh.net)
+
+[jsproxy](https://github.com/EtherDream/jsproxy/)
