@@ -36,7 +36,7 @@ ENV_JSDELIVR_MIRROR = sanitize_mirror_url(os.getenv('SDELIVR_MIRROR', 'cdn.jsdel
 ENV_SIZE_LIMIT = int(os.getenv('SIZE_LIMIT', 1024 * 1024 * 1024 * 999))
 HOST = os.getenv('HOST', '127.0.0.1')
 PORT = int(os.getenv('PORT', 80))
-ASSET_URL = os.getenv('ASSET_URL', 'https://hunshcn.github.io/gh-proxy')
+ASSET_URL = os.getenv('ASSET_URL', 'https://benzbrake.github.io/gh-proxy')
 
 # 根据 ENV_DEBUG_MODE 配置日志级别
 if ENV_DEBUG_MODE:
