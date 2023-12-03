@@ -9,7 +9,7 @@ export JSDELIVR_MIRROR=${JSDELIVR_MIRROR-cdn.jsdelivr.net}
 export SIZE_LIMIT=${SIZE_LIMIT-1072668082176}
 export HOST=${HOST-0.0.0.0}
 export PORT=${PORT-8082}
-export ASSET_URL=${ASSET_URL-https://hunshcn.github.io/gh-proxy}
+export ASSET_URL=${ASSET_URL-https://benzbrake.github.io/gh-proxy}
 
 # 脚本参数
 venv_dir="$script_dir/venv"
@@ -20,8 +20,6 @@ log_file="$script_dir/app.log"
 
 # 是否后台运行标志
 run_in_background=true
-# 是否开启调试模式标志
-debug_mode=false
 # 是否安装软件包标志
 install_packages=true
 
