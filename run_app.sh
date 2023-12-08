@@ -26,16 +26,16 @@ install_packages=true
 # 检查参数
 for arg in "$@"; do
     case "$arg" in
-        --forceground)
-            run_in_background=false
-            ;;
-        --debug)
-            export DEBUG_MODE=1
-            run_in_background=false  # 强制前台运行
-            ;;
-        --no-root)
-            install_packages=false
-            ;;
+    --forceground)
+        run_in_background=false
+        ;;
+    --debug)
+        export DEBUG_MODE=1
+        run_in_background=false # 强制前台运行
+        ;;
+    --no-root)
+        install_packages=false
+        ;;
     esac
 done
 
@@ -53,28 +53,28 @@ if [ ! -d "$venv_dir" ]; then
     echo "虚拟环境不存在，正在创建..."
 
     if [ "$install_packages" == true ]; then
-      # 安装 Python、pip 和 venv
-      if [ "$EUID" -ne 0 ] && [ "$install_packages" == true ]; then
-          # 不是 root 用户，使用 sudo
-          sudo_command="sudo"
-      else
-          sudo_command=""
-      fi
+        # 安装 Python、pip 和 venv
+        if [ "$EUID" -ne 0 ] && [ "$install_packages" == true ]; then
+            # 不是 root 用户，使用 sudo
+            sudo_command="sudo"
+        else
+            sudo_command=""
+        fi
 
-      if command -v apt-get &> /dev/null; then
-          # Debian/Ubuntu
-          $sudo_command apt-get update
-          $sudo_command apt-get install -y python3 python3-pip python3-venv
-      elif command -v yum &> /dev/null; then
-          # CentOS
-          $sudo_command yum install -y python3 python3-pip python3-venv
-      elif command -v apk &> /dev/null; then
-          # Alpine
-          $sudo_command apk add python3 py3-pip py3-venv
-      else
-          echo "不支持的系统。"
-          exit 1
-      fi
+        if command -v apt-get &>/dev/null; then
+            # Debian/Ubuntu
+            $sudo_command apt-get update
+            $sudo_command apt-get install -y python3 python3-pip python3-venv
+        elif command -v yum &>/dev/null; then
+            # CentOS
+            $sudo_command yum install -y python3 python3-pip python3-venv
+        elif command -v apk &>/dev/null; then
+            # Alpine
+            $sudo_command apk add python3 py3-pip py3-venv
+        elif [ -z "$(command -v python)" ]; then
+            echo "不支持的系统。"
+            exit 1
+        fi
     fi
 
     # 创建虚拟环境
@@ -91,10 +91,9 @@ source "$venv_dir/bin/activate"
 # 安装依赖项
 pip install -r "$requirements_file"
 
-
 # 启动 Flask 应用程序
 if [ "$run_in_background" == true ]; then
-    nohup python "$app_directory/$app_script" >> "$log_file" 2>&1 &
+    nohup python "$app_directory/$app_script" >>"$log_file" 2>&1 &
     proc_list
 else
     python "$app_directory/$app_script"
