@@ -20,7 +20,7 @@ github release、archive以及项目文件的加速项目，支持clone，有Clo
 
 ### 本仓库新增演示（Python 源码）
 
-[https://ghmirror.pp.ua](https://ghmirror.pp.ua)
+[https://mirror.serv00.net/](https://mirror.serv00.net/)
 
 ## python版本和cf worker版本差异
 
