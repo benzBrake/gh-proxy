@@ -13,6 +13,7 @@ from requests.utils import (
     stream_decode_response_unicode, iter_slices, CaseInsensitiveDict)
 from urllib3.exceptions import (
     DecodeError, ReadTimeoutError, ProtocolError)
+from urllib.parse import quote
 
 def sanitize_mirror_url(url):
     url = re.sub(r'^(https?://)', '', url)
@@ -188,6 +189,7 @@ def handler(u):
             if url.startswith('https:/') and not url.startswith('https://'):
                 url = 'https://' + url[7:]
             return redirect(url)
+        u = quote(u, safe='/:')
         return proxy(u)
 
 def proxy(u, allow_redirects=False):
