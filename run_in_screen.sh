@@ -5,7 +5,7 @@ if screen -list | grep -q "ghproxy"; then
     echo "Screen session 'ghproxy' is already running."
 else
     if [ -f "$script_dir/run_app.sh" ]; then
-    screen -dmS ghproxy -- "$script_dir/run_app.sh --forceground"
+    screen -dmS ghproxy -- "$script_dir/run_app.sh" --forceground
     echo "Started 'run_app.sh' in a new screen session 'ghproxy'."
     fi
 fi
