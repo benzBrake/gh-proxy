@@ -42,7 +42,7 @@ done
 proc_list() {
     # 检测进程是否已经运行
     echo Process List:
-    ps -ef | grep -v grep | grep "$app_directory/$app_script"
+    ps aux | grep -v grep | grep "$app_directory/$app_script"
     if [ $? -eq 0 ]; then
         exit
     fi
