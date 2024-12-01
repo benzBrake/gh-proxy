@@ -26,7 +26,7 @@ install_packages=true
 # 检查参数
 for arg in "$@"; do
     case "$arg" in
-    --forceground)
+    --foreground)
         run_in_background=false
         ;;
     --debug)
