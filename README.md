@@ -87,8 +87,8 @@ docker run -d --name="gh-proxy-py" \
 
 ```bash
 # 方法 1: 使用 uv（推荐）
-chmod +x run_app.sh
-./run_app.sh
+chmod +x scripts/run_app.sh
+./scripts/run_app.sh
 
 # 方法 2: 使用 pip（兼容模式）
 # 如果系统未安装 uv，脚本会自动回退到 pip
@@ -103,12 +103,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 **方法 1: 双击运行（推荐）**
 ```
-双击 run_app.bat 文件
+双击 scripts\run_app.bat 文件
 ```
 
 **方法 2: 命令行运行**
 ```cmd
-run_app.bat
+scripts\run_app.bat
 ```
 
 **安装 uv（可选，提升安装速度）：**
@@ -131,13 +131,13 @@ export ASSET_URL=https://benzbrake.github.io/gh-proxy  # 静态资源 URL
 
 ```bash
 # 后台运行（默认）
-./run_app.sh
+./scripts/run_app.sh
 
 # 前台运行（调试用）
-./run_app.sh --foreground
+./scripts/run_app.sh --foreground
 
 # 调试模式
-./run_app.sh --debug
+./scripts/run_app.sh --debug
 ```
 
 按需求修改`app/main.py`的前几项配置
