@@ -1,4 +1,6 @@
 @echo off
+REM 设置控制台编码为 UTF-8
+chcp 65001 >nul 2>&1
 setlocal enabledelayedexpansion
 
 REM ========================================
@@ -13,12 +15,12 @@ set venv_dir=venv
 set log_file=gh-proxy.log
 
 REM 设置环境变量
-set ENABLE_JSDELIVR=0
-set JSDELIVR_MIRROR=cdn.jsdelivr.net
-set SIZE_LIMIT=1072668082176
-set HOST=0.0.0.0
-set PORT=8082
-set ASSET_URL=https://benzbrake.github.io/gh-proxy
+set "ENABLE_JSDELIVR=0"
+set "JSDELIVR_MIRROR=cdn.jsdelivr.net"
+set "SIZE_LIMIT=1072668082176"
+set "HOST=0.0.0.0"
+set "PORT=8082"
+set "ASSET_URL=https://benzbrake.github.io/gh-proxy"
 
 REM 检测 Python 命令
 where python >nul 2>&1
@@ -84,6 +86,9 @@ echo 使用 !python_cmd! -m venv 创建虚拟环境...
 !python_cmd! -m venv %venv_dir%
 
 :activate_venv
+REM 切换到项目根目录
+cd /d "%~dp0.."
+
 REM 激活虚拟环境
 if exist ".venv\Scripts\activate.bat" (
     call .venv\Scripts\activate.bat

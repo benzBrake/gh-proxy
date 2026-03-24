@@ -1,6 +1,7 @@
 #!/bin/bash
-# 获取脚本所在目录的绝对路径
+# 获取脚本所在目录的绝对路径，并切换到项目根目录
 script_dir=$(dirname "$(readlink -f "$0")")
+cd "$script_dir/.."
 
 # 设置环境变量
 export ENABLE_JSDELIVR=${ENABLE_JSDELIVR-0}
