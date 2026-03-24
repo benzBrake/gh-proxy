@@ -81,9 +81,63 @@ docker run -d --name="gh-proxy-py" \
 
 ### 直接部署
 
-```
+#### Linux / macOS
+
+项目已迁移到 [uv](https://github.com/astral-sh/uv) 依赖管理方案，安装速度提升 10-100 倍。
+
+```bash
+# 方法 1: 使用 uv（推荐）
 chmod +x run_app.sh
 ./run_app.sh
+
+# 方法 2: 使用 pip（兼容模式）
+# 如果系统未安装 uv，脚本会自动回退到 pip
+```
+
+**安装 uv（可选）：**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+#### Windows
+
+**方法 1: 双击运行（推荐）**
+```
+双击 run_app.bat 文件
+```
+
+**方法 2: 命令行运行**
+```cmd
+run_app.bat
+```
+
+**安装 uv（可选，提升安装速度）：**
+```powershell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+#### 环境变量配置
+
+可通过环境变量自定义配置：
+
+```bash
+export HOST=0.0.0.0          # 监听地址
+export PORT=8082             # 监听端口
+export SIZE_LIMIT=1072668082176  # 文件大小限制（字节）
+export ASSET_URL=https://benzbrake.github.io/gh-proxy  # 静态资源 URL
+```
+
+#### 运行模式
+
+```bash
+# 后台运行（默认）
+./run_app.sh
+
+# 前台运行（调试用）
+./run_app.sh --foreground
+
+# 调试模式
+./run_app.sh --debug
 ```
 
 按需求修改`app/main.py`的前几项配置

@@ -48,53 +48,93 @@ proc_list() {
     fi
 }
 
+# 检测 Python 命令
+python_cmd=$(command -v python3 || command -v python)
+
 # 检查虚拟环境是否存在
-if [ ! -d "$venv_dir" ]; then
+if [ ! -d "$venv_dir" ] && [ ! -d ".venv" ]; then
     echo "虚拟环境不存在，正在创建..."
 
-    if [ "$install_packages" == true ]; then
-        # 安装 Python、pip 和 venv
-        if [ "$EUID" -ne 0 ] && [ "$install_packages" == true ]; then
-            # 不是 root 用户，使用 sudo
-            sudo_command="sudo"
-        else
-            sudo_command=""
-        fi
+    # 优先使用 uv
+    if command -v uv &> /dev/null; then
+        echo "使用 uv 创建虚拟环境..."
+        uv venv
+    elif command -v python3 &> /dev/null; then
+        echo "使用 python3 -m venv 创建虚拟环境..."
+        python3 -m venv "$venv_dir"
+    elif command -v python &> /dev/null; then
+        echo "使用 python -m venv 创建虚拟环境..."
+        python -m venv "$venv_dir"
+    else
+        echo "错误：未找到 Python 或 uv"
 
-        if command -v apt-get &>/dev/null; then
-            # Debian/Ubuntu
-            $sudo_command apt-get update
-            $sudo_command apt-get install -y python3 python3-pip python3-venv
-        elif command -v yum &>/dev/null; then
-            # CentOS
-            $sudo_command yum install -y python3 python3-pip python3-venv
-        elif command -v apk &>/dev/null; then
-            # Alpine
-            $sudo_command apk add python3 py3-pip py3-venv
-        elif [ -z "$(command -v python)" ]; then
-            echo "不支持的系统。"
+        if [ "$install_packages" == true ]; then
+            # 尝试安装 Python
+            if [ "$EUID" -ne 0 ] && [ "$install_packages" == true ]; then
+                sudo_command="sudo"
+            else
+                sudo_command=""
+            fi
+
+            if command -v apt-get &>/dev/null; then
+                # Debian/Ubuntu
+                $sudo_command apt-get update
+                $sudo_command apt-get install -y python3 python3-pip python3-venv
+            elif command -v yum &>/dev/null; then
+                # CentOS
+                $sudo_command yum install -y python3 python3-pip python3-venv
+            elif command -v apk &>/dev/null; then
+                # Alpine
+                $sudo_command apk add python3 py3-pip py3-venv
+            else
+                echo "不支持的系统。"
+                exit 1
+            fi
+
+            # 创建虚拟环境
+            python3 -m venv "$venv_dir"
+        else
             exit 1
         fi
     fi
-
-    # 创建虚拟环境
-    python3 -m venv "$venv_dir"
-
     echo "虚拟环境已创建。"
 fi
 
 proc_list
 
 # 激活虚拟环境
-source "$venv_dir/bin/activate"
+if [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+elif [ -f "$venv_dir/bin/activate" ]; then
+    source "$venv_dir/bin/activate"
+fi
 
-# 安装依赖项
-pip install -r "$requirements_file"
+# 安装/更新依赖
+echo "正在安装依赖..."
+
+if command -v uv &> /dev/null; then
+    echo "使用 uv 同步依赖..."
+    uv sync
+elif command -v pip &> /dev/null; then
+    echo "使用 pip 安装依赖..."
+    pip install -r "$requirements_file"
+else
+    echo "错误：未找到 uv 或 pip"
+    exit 1
+fi
 
 # 启动 Flask 应用程序
 if [ "$run_in_background" == true ]; then
-    nohup python "$app_directory/$app_script" >>"$log_file" 2>&1 &
+    if command -v uv &> /dev/null; then
+        nohup uv run python "$app_directory/$app_script" >>"$log_file" 2>&1 &
+    else
+        nohup python "$app_directory/$app_script" >>"$log_file" 2>&1 &
+    fi
     proc_list
 else
-    python "$app_directory/$app_script"
+    if command -v uv &> /dev/null; then
+        uv run python "$app_directory/$app_script"
+    else
+        python "$app_directory/$app_script"
+    fi
 fi
