@@ -11,7 +11,7 @@ REM ========================================
 REM 配置参数
 set app_directory=app
 set app_script=main.py
-set venv_dir=venv
+set venv_dir=.venv
 set log_file=gh-proxy.log
 
 REM 设置环境变量
@@ -21,6 +21,9 @@ set "SIZE_LIMIT=1072668082176"
 set "HOST=0.0.0.0"
 set "PORT=8082"
 set "ASSET_URL=https://benzbrake.github.io/gh-proxy"
+
+REM 切换到项目根目录
+cd /d "%~dp0.."
 
 REM 检测 Python 命令
 where python >nul 2>&1
@@ -41,11 +44,6 @@ exit /b 1
 
 :check_venv
 REM 检查虚拟环境是否存在
-if exist ".venv\Scripts\activate.bat" (
-    echo 虚拟环境已存在：.venv
-    goto :activate_venv
-)
-
 if exist "%venv_dir%\Scripts\activate.bat" (
     echo 虚拟环境已存在：%venv_dir%
     goto :activate_venv
@@ -58,7 +56,7 @@ REM 检查 uv 是否安装
 where uv >nul 2>&1
 if %errorlevel% equ 0 (
     echo 使用 uv 创建虚拟环境...
-    uv venv
+    uv venv %venv_dir%
     goto :activate_venv
 )
 
@@ -86,15 +84,8 @@ echo 使用 !python_cmd! -m venv 创建虚拟环境...
 !python_cmd! -m venv %venv_dir%
 
 :activate_venv
-REM 切换到项目根目录
-cd /d "%~dp0.."
-
 REM 激活虚拟环境
-if exist ".venv\Scripts\activate.bat" (
-    call .venv\Scripts\activate.bat
-) else (
-    call %venv_dir%\Scripts\activate.bat
-)
+call %venv_dir%\Scripts\activate.bat
 
 REM 安装依赖
 echo 正在安装依赖...
