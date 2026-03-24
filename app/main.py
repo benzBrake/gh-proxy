@@ -15,6 +15,23 @@ from urllib3.exceptions import (
     DecodeError, ReadTimeoutError, ProtocolError)
 from urllib.parse import quote
 
+# Path management
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESOURCES_DIR = os.path.join(BASE_DIR, 'resources')
+
+DEFAULT_RULES = {
+    'whitelist': os.path.join(RESOURCES_DIR, 'whitelist_rules'),
+    'blacklist': os.path.join(RESOURCES_DIR, 'blacklist_rules'),
+    'passlist': os.path.join(RESOURCES_DIR, 'passlist_rules'),
+}
+
+# Backward compatibility: fallback to root directory
+LEGACY_RULES = {
+    'whitelist': 'whitelist',
+    'blacklist': 'blacklist',
+    'passlist': 'passlist',
+}
+
 def sanitize_mirror_url(url):
     url = re.sub(r'^(https?://)', '', url)
     url = re.sub(r'/$', '', url)
@@ -50,29 +67,51 @@ else:
 if not is_valid_ip(HOST):
     raise ValueError(f'Invalid IP address: {HOST}')
 
-def download_rules_list(env_var_name, local_filename, url=None):
-    if url and not os.path.exists(local_filename):
+def download_rules_list(env_var_name, rule_type, url=None):
+    """
+    Load rules from URL or local file with backward compatibility support.
+
+    Args:
+        env_var_name: Environment variable name for custom URL
+        rule_type: Rule type ('whitelist', 'blacklist', or 'passlist')
+        url: Default URL to download rules from (optional)
+
+    Returns:
+        List of rule tuples
+    """
+    # Check for custom URL from environment variable
+    custom_url = os.getenv(env_var_name)
+    if custom_url:
+        url = custom_url
+
+    # Try downloading from URL if file doesn't exist
+    if url and not os.path.exists(DEFAULT_RULES[rule_type]):
         try:
             response = requests.get(url)
-            response.raise_for_status()  # 抛出异常如果请求不成功
-            rules = [tuple([x.replace(' ', '') for x in line.strip().split('/')]) for line in response.text.split('\n') if line]
-            with open(local_filename, 'w') as file:
+            response.raise_for_status()
+            rules = [tuple([x.replace(' ', '') for x in line.strip().split('/')]) for line in response.text.split('\n') if line.strip() and not line.strip().startswith('#')]
+            with open(DEFAULT_RULES[rule_type], 'w') as file:
                 file.write('\n'.join('/'.join(rule) for rule in rules))
             return rules
         except requests.exceptions.RequestException as e:
             print(f"Failed to fetch rules list from {url}: {e}. Using an empty list.")
             return []
 
-    if os.path.exists(local_filename):
-        with open(local_filename, 'r') as file:
-            return [tuple([x.replace(' ', '') for x in line.strip().split('/')]) for line in file.readlines() if line]
+    # Load from resources directory with fallback to root directory (backward compatibility)
+    rule_file = DEFAULT_RULES[rule_type]
+    if not os.path.exists(rule_file):
+        rule_file = LEGACY_RULES[rule_type]
 
-    print(f"Local file {local_filename} not found. Using an empty list.")
+    if os.path.exists(rule_file):
+        with open(rule_file, 'r') as file:
+            return [tuple([x.replace(' ', '') for x in line.strip().split('/')]) for line in file.readlines() if line.strip() and not line.strip().startswith('#')]
+
+    print(f"Local file {rule_file} not found. Using an empty list.")
     return []
 
 
 whitelist_rules = download_rules_list('WHITELIST_RULES_URL', 'whitelist')
-blacklist_rules = download_rules_list('BLACKLIST_RULES_URL', 'blacklist', 'https://github.com/benzBrake/gh-proxy/raw/master/blacklist_rules')
+blacklist_rules = download_rules_list('BLACKLIST_RULES_URL', 'blacklist', 'https://github.com/benzBrake/gh-proxy/raw/master/resources/blacklist_rules')
 passlist_rules = download_rules_list('PASSLIST_RULES_URL', 'passlist')
 
 app = Flask(__name__)

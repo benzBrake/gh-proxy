@@ -1,0 +1,7 @@
+# Passlist Rules
+#
+# Format: author/repo
+# Rules in this list will pass through to jsDelivr CDN
+# Example:
+# microsoft/typescript
+# nodejs/node

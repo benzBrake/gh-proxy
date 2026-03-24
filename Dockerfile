@@ -5,6 +5,7 @@ LABEL maintainer="hunshcn <hunsh.cn@gmail.com>"
 RUN pip install flask requests
 
 COPY ./app /app
+COPY ./resources /resources
 WORKDIR /app
 
 # Make /app/* available to be imported by Python globally to better support several use cases like Alembic migrations.
