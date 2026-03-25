@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+  <style>
+    html,
+    body {
+      width: 100%;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    html {
+      height: 100%;
+    }
+
+    body {
+      min-height: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .flex {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      padding: 50px 40px;
+      max-width: 560px;
+      width: 100%;
+      margin: 20px;
+      text-align: center;
+    }
+
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 30px;
+      background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
+    }
+
+    .icon svg {
+      width: 40px;
+      height: 40px;
+      fill: #ffffff;
+    }
+
+    h1 {
+      margin: 0 0 20px 0;
+      font-size: 28px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .error-code {
+      font-size: 64px;
+      font-weight: 700;
+      color: #c53030;
+      margin: 0 0 20px 0;
+      line-height: 1;
+    }
+
+    .message {
+      color: #666;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .url-box {
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+      word-break: break-all;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      color: #495057;
+    }
+
+    .url-box .label {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .actions {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .footer {
+      margin-top: 30px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+    }
+
+    .footer a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      padding-bottom: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .footer a:hover {
+      border-bottom-color: #ffffff;
+    }
+
+    .reason {
+      background: #fff5f5;
+      border-left: 4px solid #c53030;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: left;
+      border-radius: 4px;
+    }
+
+    .reason-title {
+      font-weight: 600;
+      color: #c53030;
+      margin-bottom: 8px;
+    }
+
+    .reason-text {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>访问被拒绝 - GitHub 文件加速</title>
+  </head>
+  <body class="flex">
+    <div class="card">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </div>
+      <div class="error-code">403</div>
+      <h1>访问被拒绝</h1>
+      <p class="message">
+        抱歉，您请求的网址在黑名单中，无法通过此代理服务访问。
+      </p>
+
+      <div class="url-box">
+        <span class="label">请求的网址：</span>
+        <span id="blocked-url">加载中...</span>
+      </div>
+
+      <div class="reason">
+        <div class="reason-title">⚠️ 为什么被禁止？</div>
+        <div class="reason-text">
+          该网址可能因以下原因被加入黑名单：<br>
+          • 违反服务使用条款<br>
+          • 涉及恶意内容或版权问题<br>
+          • 资源消耗过大影响其他用户<br>
+          • 其他管理员设置的限制
+        </div>
+      </div>
+
+      <div class="actions">
+        <a href="./" class="btn">返回首页</a>
+      </div>
+    </div>
+
+    <p class="footer">
+      项目使用 Cloudflare CDN 加速，开源于 GitHub
+      <a href="https://github.com/benzBrake/gh-proxy" target="_blank"
+        >benzBrake/gh-proxy</a
+      >
+    </p>
+
+    <script>
+      // 获取被阻止的 URL
+      const blockedUrl = new URLSearchParams(window.location.search).get('url') ||
+                         new URLSearchParams(window.location.search).get('q') ||
+                         document.referrer ||
+                         '未知网址';
+      document.getElementById('blocked-url').textContent = blockedUrl;
+
+      // 如果有错误信息，显示错误信息
+      const errorMessage = new URLSearchParams(window.location.search).get('message');
+      if (errorMessage) {
+        const messageElement = document.querySelector('.message');
+        messageElement.textContent = decodeURIComponent(errorMessage);
+      }
+    </script>
+  </body>
+</html>
