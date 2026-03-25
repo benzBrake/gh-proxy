@@ -11,6 +11,10 @@ export SIZE_LIMIT=${SIZE_LIMIT-1072668082176}
 export HOST=${HOST-0.0.0.0}
 export PORT=${PORT-8082}
 export ASSET_URL=${ASSET_URL-https://benzbrake.github.io/gh-proxy}
+export API_PROXY=${API_PROXY-}
+export API_PROXY_SECONDARY=${API_PROXY_SECONDARY-}
+export API_PROXY_RETRIES=${API_PROXY_RETRIES-3}
+export API_PROXY_TIMEOUT=${API_PROXY_TIMEOUT-15}
 
 # 脚本参数
 venv_dir="$script_dir/venv"
