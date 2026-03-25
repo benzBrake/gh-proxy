@@ -116,8 +116,18 @@ passlist_rules = download_rules_list('PASSLIST_RULES_URL', 'passlist')
 
 app = Flask(__name__)
 CHUNK_SIZE = 1024 * 10
-index_html = requests.get(ASSET_URL, timeout=10).text
-icon_r = requests.get(ASSET_URL + '/favicon.ico', timeout=10).content
+
+# 缓存静态资源，提供默认值防止启动失败
+try:
+    index_html = requests.get(ASSET_URL, timeout=10).text
+    icon_r = requests.get(ASSET_URL + '/favicon.ico', timeout=10).content
+    forbidden_html = requests.get(ASSET_URL + '/forbidden.html', timeout=10).text
+    logging.info(f'Static resources cached from {ASSET_URL}')
+except requests.RequestException as e:
+    logging.warning(f'Failed to fetch static resources from {ASSET_URL}: {e}')
+    index_html = '<h1>gh-proxy Service</h1><p>Failed to load index page</p>'
+    icon_r = b''
+    forbidden_html = '<h1>Forbidden</h1><p>Your access has been denied.</p>'
 exp1 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:releases|archive)/.*$')
 exp2 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:blob|raw)/.*$')
 exp3 = re.compile(r'^(?:https?://)?github\.com/(?P<author>.+?)/(?P<repo>.+?)/(?:info|git-).*$')
@@ -199,11 +209,11 @@ def handler(u):
                 if m[:len(i)] == i or i[0] == '*' and len(m) == 2 and m[1] == i[1]:
                     break
             else:
-                return Response('Forbidden by white list.', status=403)
+                return Response(forbidden_html, status=403, content_type='text/html; charset=UTF-8')
 
         for i in blacklist_rules:
             if m[:len(i)] == i or i[0] == '*' and len(m) == 2 and m[1] == i[1]:
-                return Response('Forbidden by black list.', status=403)
+                return Response(forbidden_html, status=403, content_type='text/html; charset=UTF-8')
 
         for i in passlist_rules:
             if m[:len(i)] == i or i[0] == '*' and len(m) == 2 and m[1] == i[1]:
