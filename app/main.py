@@ -116,6 +116,17 @@ passlist_rules = download_rules_list('PASSLIST_RULES_URL', 'passlist')
 
 app = Flask(__name__)
 CHUNK_SIZE = 1024 * 10
+HOP_BY_HOP_HEADERS = {
+    'connection',
+    'keep-alive',
+    'proxy-authenticate',
+    'proxy-authorization',
+    'proxy-connection',
+    'te',
+    'trailer',
+    'transfer-encoding',
+    'upgrade',
+}
 
 # 缓存静态资源，提供默认值防止启动失败
 try:
@@ -193,6 +204,14 @@ def check_url(u):
             return m
     return False
 
+def sanitize_response_headers(headers):
+    sanitized = {}
+    for key, value in headers.items():
+        if key.lower() in HOP_BY_HOP_HEADERS:
+            continue
+        sanitized[key] = value
+    return sanitized
+
 @app.route('/<path:u>', methods=['GET', 'POST'])
 def handler(u):
     u = u if u.startswith('http') else 'https://' + u
@@ -253,14 +272,17 @@ def proxy(u, allow_redirects=False):
 
         logging.info('proxy: %s' % url)
         r = requests.request(method=request.method, url=url, data=request.data, headers=r_headers, stream=True, allow_redirects=allow_redirects)
-        headers = dict(r.headers)
+        headers = sanitize_response_headers(r.headers)
 
         if 'Content-length' in r.headers and int(r.headers['Content-length']) > ENV_SIZE_LIMIT:
             return redirect(u + request.url.replace(request.base_url, '', 1))
 
         def generate():
-            for chunk in iter_content(r, chunk_size=CHUNK_SIZE):
-                yield chunk
+            try:
+                for chunk in iter_content(r, chunk_size=CHUNK_SIZE):
+                    yield chunk
+            finally:
+                r.close()
 
         if 'Location' in r.headers:
             _location = r.headers.get('Location')
