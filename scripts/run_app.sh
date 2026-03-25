@@ -1,7 +1,8 @@
 #!/bin/bash
-# 获取脚本所在目录的绝对路径，并切换到项目根目录
+
 script_dir=$(dirname "$(readlink -f "$0")")
-cd "$script_dir/.."
+project_root=$(cd "$script_dir/.." && pwd)
+cd "$project_root" || exit 1
 
 # 设置环境变量
 export ENABLE_JSDELIVR=${ENABLE_JSDELIVR-0}
@@ -17,11 +18,11 @@ export API_PROXY_RETRIES=${API_PROXY_RETRIES-3}
 export API_PROXY_TIMEOUT=${API_PROXY_TIMEOUT-15}
 
 # 脚本参数
-venv_dir="$script_dir/venv"
-requirements_file="$script_dir/requirements.txt"
-app_directory="$script_dir/app"
+venv_dir="$project_root/.venv"
+requirements_file="$project_root/requirements.txt"
+app_directory="$project_root/app"
 app_script="main.py"
-log_file="$script_dir/app.log"
+log_file="$project_root/gh-proxy.log"
 
 # 是否后台运行标志
 run_in_background=true
@@ -57,13 +58,13 @@ proc_list() {
 python_cmd=$(command -v python3 || command -v python)
 
 # 检查虚拟环境是否存在
-if [ ! -d "$venv_dir" ] && [ ! -d ".venv" ]; then
+if [ ! -d "$venv_dir" ]; then
     echo "虚拟环境不存在，正在创建..."
 
     # 优先使用 uv
     if command -v uv &> /dev/null; then
         echo "使用 uv 创建虚拟环境..."
-        uv venv
+        uv venv "$venv_dir"
     elif command -v python3 &> /dev/null; then
         echo "使用 python3 -m venv 创建虚拟环境..."
         python3 -m venv "$venv_dir"
@@ -108,9 +109,7 @@ fi
 proc_list
 
 # 激活虚拟环境
-if [ -f ".venv/bin/activate" ]; then
-    source .venv/bin/activate
-elif [ -f "$venv_dir/bin/activate" ]; then
+if [ -f "$venv_dir/bin/activate" ]; then
     source "$venv_dir/bin/activate"
 fi
 
