@@ -21,6 +21,10 @@ set "SIZE_LIMIT=1072668082176"
 set "HOST=0.0.0.0"
 set "PORT=8082"
 set "ASSET_URL=https://benzbrake.github.io/gh-proxy"
+if not defined API_PROXY set "API_PROXY="
+if not defined API_PROXY_SECONDARY set "API_PROXY_SECONDARY="
+if not defined API_PROXY_RETRIES set "API_PROXY_RETRIES=3"
+if not defined API_PROXY_TIMEOUT set "API_PROXY_TIMEOUT=15"
 
 REM 切换到项目根目录
 cd /d "%~dp0.."

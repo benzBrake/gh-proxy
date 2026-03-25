@@ -13,7 +13,7 @@ from requests.utils import (
     stream_decode_response_unicode, iter_slices, CaseInsensitiveDict)
 from urllib3.exceptions import (
     DecodeError, ReadTimeoutError, ProtocolError)
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 # Path management
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,6 +55,31 @@ ENV_SIZE_LIMIT = int(os.getenv('SIZE_LIMIT', 1024 * 1024 * 1024 * 999))
 HOST = os.getenv('HOST', '127.0.0.1')
 PORT = int(os.getenv('PORT', 80))
 ASSET_URL = os.getenv('ASSET_URL', 'https://benzbrake.github.io/gh-proxy')
+
+def env_int(name, default, minimum=None):
+    value = os.getenv(name)
+    try:
+        parsed = int(value) if value is not None else default
+    except (TypeError, ValueError):
+        parsed = default
+    if minimum is not None:
+        parsed = max(minimum, parsed)
+    return parsed
+
+def env_float(name, default, minimum=None):
+    value = os.getenv(name)
+    try:
+        parsed = float(value) if value is not None else default
+    except (TypeError, ValueError):
+        parsed = default
+    if minimum is not None:
+        parsed = max(minimum, parsed)
+    return parsed
+
+ENV_API_PROXY = os.getenv('API_PROXY', '').strip()
+ENV_API_PROXY_SECONDARY = os.getenv('API_PROXY_SECONDARY', '').strip()
+ENV_API_PROXY_RETRIES = env_int('API_PROXY_RETRIES', 3, minimum=1)
+ENV_API_PROXY_TIMEOUT = env_float('API_PROXY_TIMEOUT', 15, minimum=1)
 
 # 根据 ENV_DEBUG_MODE 配置日志级别
 if ENV_DEBUG_MODE:
@@ -212,6 +237,76 @@ def sanitize_response_headers(headers):
         sanitized[key] = value
     return sanitized
 
+def build_requests_proxy(proxy_url):
+    if not proxy_url:
+        return None
+    return {
+        'http': proxy_url,
+        'https': proxy_url,
+    }
+
+def is_github_api_url(url):
+    return urlparse(url).netloc.lower() == 'api.github.com'
+
+def is_retryable_method(method):
+    return method.upper() in {'GET', 'HEAD', 'OPTIONS'}
+
+def should_retry_github_api_response(response, method):
+    if not is_retryable_method(method):
+        return False
+    if response.status_code in {429, 500, 502, 503, 504}:
+        return True
+    if response.status_code != 403:
+        return False
+    if response.headers.get('Retry-After'):
+        return True
+    if response.headers.get('X-RateLimit-Remaining') == '0':
+        return True
+    return bool(response.headers.get('X-RateLimit-Reset'))
+
+def github_api_request(method, url, headers, data, allow_redirects):
+    strategies = []
+    primary_proxy = build_requests_proxy(ENV_API_PROXY)
+    secondary_proxy = build_requests_proxy(ENV_API_PROXY_SECONDARY)
+
+    if primary_proxy:
+        strategies.append(('primary-proxy', primary_proxy, ENV_API_PROXY_RETRIES))
+    if secondary_proxy and secondary_proxy != primary_proxy:
+        strategies.append(('secondary-proxy', secondary_proxy, ENV_API_PROXY_RETRIES))
+    strategies.append(('direct', None, 1))
+
+    for strategy_index, (strategy_name, proxies, max_attempts) in enumerate(strategies):
+        for attempt in range(1, max_attempts + 1):
+            try:
+                logging.info(
+                    'github api request strategy=%s attempt=%s/%s url=%s',
+                    strategy_name, attempt, max_attempts, url)
+                response = requests.request(
+                    method=method,
+                    url=url,
+                    data=data,
+                    headers=headers,
+                    stream=True,
+                    allow_redirects=allow_redirects,
+                    proxies=proxies,
+                    timeout=ENV_API_PROXY_TIMEOUT)
+                is_last_attempt = strategy_index == len(strategies) - 1 and attempt == max_attempts
+                if should_retry_github_api_response(response, method) and not is_last_attempt:
+                    logging.warning(
+                        'github api retryable response strategy=%s attempt=%s/%s status=%s url=%s',
+                        strategy_name, attempt, max_attempts, response.status_code, url)
+                    response.close()
+                    continue
+                return response
+            except requests.exceptions.RequestException as exc:
+                logging.warning(
+                    'github api request failed strategy=%s attempt=%s/%s url=%s error=%s',
+                    strategy_name, attempt, max_attempts, url, exc)
+                if strategy_index == len(strategies) - 1 and attempt == max_attempts:
+                    raise
+
+    raise RuntimeError('unreachable github api request state')
+
 @app.route('/<path:u>', methods=['GET', 'POST'])
 def handler(u):
     u = u if u.startswith('http') else 'https://' + u
@@ -271,7 +366,21 @@ def proxy(u, allow_redirects=False):
             url = 'https://' + url[7:]
 
         logging.info('proxy: %s' % url)
-        r = requests.request(method=request.method, url=url, data=request.data, headers=r_headers, stream=True, allow_redirects=allow_redirects)
+        if is_github_api_url(url):
+            r = github_api_request(
+                method=request.method,
+                url=url,
+                headers=r_headers,
+                data=request.data,
+                allow_redirects=allow_redirects)
+        else:
+            r = requests.request(
+                method=request.method,
+                url=url,
+                data=request.data,
+                headers=r_headers,
+                stream=True,
+                allow_redirects=allow_redirects)
         headers = sanitize_response_headers(r.headers)
 
         if 'Content-length' in r.headers and int(r.headers['Content-length']) > ENV_SIZE_LIMIT:

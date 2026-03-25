@@ -125,6 +125,10 @@ export HOST=0.0.0.0          # 监听地址
 export PORT=8082             # 监听端口
 export SIZE_LIMIT=1072668082176  # 文件大小限制（字节）
 export ASSET_URL=https://benzbrake.github.io/gh-proxy  # 静态资源 URL
+export API_PROXY=http://127.0.0.1:7890  # GitHub API 主代理，可留空
+export API_PROXY_SECONDARY=http://127.0.0.1:7891  # GitHub API 备用代理，可留空
+export API_PROXY_RETRIES=3  # 每个代理默认重试 3 次
+export API_PROXY_TIMEOUT=15  # GitHub API 单次请求超时（秒）
 ```
 
 #### 运行模式
@@ -139,6 +143,12 @@ export ASSET_URL=https://benzbrake.github.io/gh-proxy  # 静态资源 URL
 # 调试模式
 ./scripts/run_app.sh --debug
 ```
+
+GitHub API 请求会按以下顺序尝试：
+
+1. `API_PROXY`，默认最多尝试 `API_PROXY_RETRIES` 次
+2. `API_PROXY_SECONDARY`，默认最多尝试 `API_PROXY_RETRIES` 次
+3. 不使用代理直连 1 次
 
 按需求修改`app/main.py`的前几项配置
 
