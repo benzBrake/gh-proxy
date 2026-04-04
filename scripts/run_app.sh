@@ -46,11 +46,14 @@ for arg in "$@"; do
 done
 
 proc_list() {
-    # 检测进程是否已经运行
-    echo Process List:
     ps aux | grep -v grep | grep "$app_directory/$app_script"
-    if [ $? -eq 0 ]; then
-        exit
+}
+
+ensure_not_running() {
+    if proc_list >/dev/null; then
+        echo "gh-proxy 已在运行："
+        proc_list
+        exit 0
     fi
 }
 
@@ -106,7 +109,7 @@ if [ ! -d "$venv_dir" ]; then
     echo "虚拟环境已创建。"
 fi
 
-proc_list
+ensure_not_running
 
 # 激活虚拟环境
 if [ -f "$venv_dir/bin/activate" ]; then
@@ -129,16 +132,26 @@ fi
 
 # 启动 Flask 应用程序
 if [ "$run_in_background" == true ]; then
+    echo "正在以后台模式启动 gh-proxy..."
+    echo "Docker 请使用 ./scripts/run_app.sh --foreground"
     if command -v uv &> /dev/null; then
         nohup uv run python "$app_directory/$app_script" >>"$log_file" 2>&1 &
     else
         nohup python "$app_directory/$app_script" >>"$log_file" 2>&1 &
     fi
-    proc_list
-else
-    if command -v uv &> /dev/null; then
-        uv run python "$app_directory/$app_script"
+    sleep 1
+    if proc_list >/dev/null; then
+        echo "gh-proxy 已启动，日志文件: $log_file"
+        proc_list
     else
-        python "$app_directory/$app_script"
+        echo "gh-proxy 启动失败，请检查日志: $log_file"
+        exit 1
+    fi
+else
+    echo "正在以前台模式启动 gh-proxy..."
+    if command -v uv &> /dev/null; then
+        exec uv run python "$app_directory/$app_script"
+    else
+        exec python "$app_directory/$app_script"
     fi
 fi

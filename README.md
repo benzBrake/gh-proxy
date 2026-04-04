@@ -68,18 +68,76 @@ github release、archive 以及项目文件的加速项目，支持 clone，有 
 
 ## Python 版本部署
 
-### Docker 部署（这是原仓库版本，本仓库的版本没有构建）
+本项目同时支持本地直接运行和 Docker 运行。
 
-```
-docker run -d --name="gh-proxy-py" \
-  -p 0.0.0.0:80:80 \
+- 本地直接运行适合开发、调试和日常测试
+- Docker 适合部署和统一运行环境
+
+如果你只是本地验证功能，不需要使用 Docker，直接按下面的“直接部署”执行即可。
+
+### Docker 部署
+
+当前仓库可直接构建 Docker 镜像，容器内只需要 Python 运行环境，不依赖 Nginx / uWSGI。
+
+```bash
+docker build -t gh-proxy:latest .
+
+docker run -d --name gh-proxy \
+  -p 8082:8082 \
   --restart=always \
-  hunsh/gh-proxy-py:latest
+  gh-proxy:latest
 ```
 
-第一个 80 是你要暴露出去的端口
+容器默认执行：
+
+```bash
+./scripts/run_app.sh --foreground
+```
+
+也就是 Docker 始终以前台模式运行，让容器生命周期由 Docker 管理，而不是依赖 `nohup` 或额外的进程管理工具。
+
+如果需要修改监听端口，直接传入环境变量：
+
+```bash
+docker run -d --name gh-proxy \
+  -p 8083:8083 \
+  -e PORT=8083 \
+  --restart=always \
+  gh-proxy:latest
+```
+
+常见 Docker 启动示例：
+
+```bash
+# 1. 指定监听地址和端口
+docker run -d --name gh-proxy \
+  -p 9000:9000 \
+  -e HOST=0.0.0.0 \
+  -e PORT=9000 \
+  --restart=always \
+  gh-proxy:latest
+
+# 2. 指定静态资源地址
+docker run -d --name gh-proxy \
+  -p 8082:8082 \
+  -e ASSET_URL=https://benzbrake.github.io/gh-proxy \
+  --restart=always \
+  gh-proxy:latest
+
+# 3. 配置 GitHub API 代理和超时
+docker run -d --name gh-proxy \
+  -p 8082:8082 \
+  -e API_PROXY=http://127.0.0.1:7890 \
+  -e API_PROXY_SECONDARY=http://127.0.0.1:7891 \
+  -e API_PROXY_RETRIES=3 \
+  -e API_PROXY_TIMEOUT=15 \
+  --restart=always \
+  gh-proxy:latest
+```
 
 ### 直接部署
+
+直接部署是本项目的保留用法，适合本地测试和排查问题，不要求使用 Docker。
 
 #### Linux / macOS
 
@@ -125,11 +183,36 @@ export HOST=0.0.0.0          # 监听地址
 export PORT=8082             # 监听端口
 export SIZE_LIMIT=1072668082176  # 文件大小限制（字节）
 export ASSET_URL=https://benzbrake.github.io/gh-proxy  # 静态资源 URL
+export ENABLE_JSDELIVR=0     # 是否启用 jsDelivr 加速，1 为启用
 export API_PROXY=http://127.0.0.1:7890  # GitHub API 主代理，可留空
 export API_PROXY_SECONDARY=http://127.0.0.1:7891  # GitHub API 备用代理，可留空
 export API_PROXY_RETRIES=3  # 每个代理默认重试 3 次
 export API_PROXY_TIMEOUT=15  # GitHub API 单次请求超时（秒）
+export DEBUG_MODE=1          # 调试模式，可选
 ```
+
+环境变量说明：
+
+- `HOST`
+  服务监听地址，本地运行和 Docker 都建议使用 `0.0.0.0`
+- `PORT`
+  服务监听端口；Docker `-p` 的容器侧端口应与这里保持一致
+- `SIZE_LIMIT`
+  文件大小限制，单位字节；超过该值时返回源链接
+- `ASSET_URL`
+  首页静态资源地址；如果外部地址不可达，服务仍会启动，但首页会回退到内置占位内容
+- `ENABLE_JSDELIVR`
+  是否启用 jsDelivr 加速，默认 `0`
+- `API_PROXY`
+  GitHub API 主代理地址，可为空
+- `API_PROXY_SECONDARY`
+  GitHub API 备用代理地址，可为空
+- `API_PROXY_RETRIES`
+  每个代理的最大重试次数，默认 `3`
+- `API_PROXY_TIMEOUT`
+  GitHub API 单次请求超时时间，单位秒，默认 `15`
+- `DEBUG_MODE`
+  调试模式，设置为 `1` 时启用 Flask debug 日志；通常通过 `./scripts/run_app.sh --debug` 使用
 
 #### 运行模式
 
@@ -137,12 +220,43 @@ export API_PROXY_TIMEOUT=15  # GitHub API 单次请求超时（秒）
 # 后台运行（默认）
 ./scripts/run_app.sh
 
-# 前台运行（调试用）
+# 停止后台运行的服务
+./scripts/kill.sh
+
+# 前台运行（调试 / Docker 用）
 ./scripts/run_app.sh --foreground
 
 # 调试模式
 ./scripts/run_app.sh --debug
 ```
+
+说明：
+
+- 本地直接运行时，`run_app.sh` 默认后台启动，使用 `./scripts/kill.sh` 停止
+- Docker 运行时，统一使用 `--foreground` 前台模式
+- `scripts/run_in_screen.sh` 已移除，不再使用 `screen` 管理进程
+
+#### 健康检查
+
+```bash
+curl http://127.0.0.1:8082/health
+```
+
+健康检查始终返回 `200`，并在响应体中给出 GitHub 连通状态：
+
+```json
+{"status":"ok","github_reachable":true}
+```
+
+如果 GitHub 暂时不可达，接口仍返回 `200`，但会在响应中标记退化状态，便于 Docker 存活检查和人工排障同时使用。
+
+例如：
+
+```json
+{"status":"ok","github_reachable":false,"github_check_error":"..."}
+```
+
+Docker 镜像内置了 `HEALTHCHECK`，默认就是请求这个接口。
 
 GitHub API 请求会按以下顺序尝试：
 
@@ -161,7 +275,9 @@ if 'Transfer-Encoding' in headers:
 
 ### 注意
 
-python 版本的机器如果无法正常访问 github.io 会启动报错，请自行修改静态文件 url
+- 如果启动机器无法访问 `ASSET_URL` 指向的静态资源地址，服务仍会启动，但首页会回退到内置占位内容
+- 如果需要自定义首页静态资源地址，可通过 `ASSET_URL` 环境变量覆盖
+- 健康检查中的 GitHub 连通性只作为诊断信息，不会因为 GitHub 暂时不可达而让 `/health` 返回失败
 
 python 版本默认走服务器（2021.3.27 更新）
 

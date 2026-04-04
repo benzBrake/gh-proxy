@@ -3,9 +3,9 @@ import os
 import re
 import socket
 import sys
-import requests
 import logging
-from flask import Flask, Response, redirect, request
+import requests
+from flask import Flask, Response, jsonify, redirect, request
 from requests.exceptions import (
     ChunkedEncodingError,
     ContentDecodingError, ConnectionError, StreamConsumedError)
@@ -55,6 +55,8 @@ ENV_SIZE_LIMIT = int(os.getenv('SIZE_LIMIT', 1024 * 1024 * 1024 * 999))
 HOST = os.getenv('HOST', '127.0.0.1')
 PORT = int(os.getenv('PORT', 80))
 ASSET_URL = os.getenv('ASSET_URL', 'https://benzbrake.github.io/gh-proxy')
+HEALTHCHECK_GITHUB_URL = 'https://github.com'
+HEALTHCHECK_TIMEOUT = 3
 
 def env_int(name, default, minimum=None):
     value = os.getenv(name)
@@ -186,6 +188,31 @@ def index():
 @app.route('/favicon.ico')
 def icon():
     return Response(icon_r, content_type='image/vnd.microsoft.icon')
+
+def check_github_reachable():
+    try:
+        response = requests.get(
+            HEALTHCHECK_GITHUB_URL,
+            timeout=HEALTHCHECK_TIMEOUT,
+            allow_redirects=True,
+            stream=True)
+        reachable = response.ok
+        error = None if reachable else f'github returned {response.status_code}'
+        response.close()
+        return reachable, error
+    except requests.exceptions.RequestException as exc:
+        return False, str(exc)
+
+@app.route('/health')
+def health():
+    github_reachable, github_check_error = check_github_reachable()
+    payload = {
+        'status': 'ok',
+        'github_reachable': github_reachable,
+    }
+    if github_check_error:
+        payload['github_check_error'] = github_check_error
+    return jsonify(payload)
 
 def iter_content(self, chunk_size=1, decode_unicode=False):
     def generate():

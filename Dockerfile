@@ -1,28 +1,28 @@
-FROM guysoft/uwsgi-nginx:python3.7
+FROM python:3.12-slim
 
-LABEL maintainer="hunshcn <hunsh.cn@gmail.com>"
+LABEL maintainer="Ryan Lieu <github-benzBrake@woai.ru>"
 
-RUN pip install flask requests
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HOST=0.0.0.0 \
+    PORT=8082
 
-COPY ./app /app
-COPY ./resources /resources
 WORKDIR /app
 
-# Make /app/* available to be imported by Python globally to better support several use cases like Alembic migrations.
-ENV PYTHONPATH=/app
+COPY requirements.txt pyproject.toml ./
 
-# Move the base entrypoint to reuse it
-RUN mv /entrypoint.sh /uwsgi-nginx-entrypoint.sh
-# Copy the entrypoint that will generate Nginx additional configs
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN python -m venv /app/.venv \
+    && /app/.venv/bin/pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["/entrypoint.sh"]
+COPY app ./app
+COPY resources ./resources
+COPY scripts ./scripts
 
-# Run the start script provided by the parent image tiangolo/uwsgi-nginx.
-# It will check for an /app/prestart.sh script (e.g. for migrations)
-# And then will start Supervisor, which in turn will start Nginx and uWSGI
+RUN chmod +x ./scripts/run_app.sh ./scripts/kill.sh
 
-EXPOSE 80
+EXPOSE 8082
 
-CMD ["/start.sh"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD python -c "import os, sys, urllib.request; port = os.environ.get('PORT', '8082'); url = f'http://127.0.0.1:{port}/health'; response = urllib.request.urlopen(url, timeout=3); sys.exit(0 if response.status == 200 else 1)"
+
+CMD ["./scripts/run_app.sh", "--foreground"]
