@@ -1,0 +1,12 @@
+# Python bytecode and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local environments and package metadata
+.venv/
+*.egg-info/
+
