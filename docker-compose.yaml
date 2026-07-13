@@ -1,0 +1,27 @@
+services:
+  gh-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gh-proxy:latest
+    container_name: gh-proxy
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8082
+      # - SIZE_LIMIT=1072668082176
+      # - ASSET_URL=https://benzbrake.github.io/gh-proxy
+      # - ENABLE_JSDELIVR=0
+      # - API_PROXY=http://127.0.0.1:7890
+      # - API_PROXY_SECONDARY=http://127.0.0.1:7891
+      # - API_PROXY_RETRIES=3
+      # - API_PROXY_TIMEOUT=15
+      # - DEBUG_MODE=0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, sys, urllib.request; port = os.environ.get('PORT', '8082'); url = f'http://127.0.0.1:{port}/health'; response = urllib.request.urlopen(url, timeout=3); sys.exit(0 if response.status == 200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
