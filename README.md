@@ -8,7 +8,7 @@ github release、archive 以及项目文件的加速项目，支持 clone，有 
 
 演示站为公共服务，如有大规模使用需求请自行部署
 
-### 原仓库演示（使用 Worker）
+### Workers 演示
 
 [https://gh.api.99988866.xyz/](https://gh.api.99988866.xyz/)
 
@@ -18,10 +18,6 @@ github release、archive 以及项目文件的加速项目，支持 clone，有 
 
 当然也欢迎[捐赠](https://github.com/hunshcn/gh-proxy#捐赠)以支持原作者
 
-### 本仓库新增演示（Python 源码）
-
-[https://mirror.serv00.net/](https://mirror.serv00.net/)
-
 ## python 版本和 cf worker 版本差异
 
 - python 版本支持进行文件大小限制，超过设定返回原地址 [issue #8](https://github.com/hunshcn/gh-proxy/issues/8)
@@ -30,7 +26,7 @@ github release、archive 以及项目文件的加速项目，支持 clone，有 
 
 ## 使用
 
-直接在 copy 出来的 url 前加`https://gh.api.99988866.xyz/`即可
+直接在 copy 出来的 url 前加下方演示站地址即可，例如 `https://gh.api.99988866.xyz/https://github.com/...`
 
 也可以直接访问，在 input 输入
 
