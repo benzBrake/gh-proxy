@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>GitHub 文件加速</title>
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     html,
     body {
       width: 100%;
@@ -20,17 +30,13 @@
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
     }
 
-    p {
-      word-break: break-all;
-    }
-
-    @media (max-width: 500px) {
-      h1 {
-        margin-top: 80px;
+    @media (min-height: 900px) {
+      body {
+        justify-content: center;
       }
     }
 
@@ -53,7 +59,7 @@
       padding: 50px 40px;
       max-width: 560px;
       width: 100%;
-      margin: 20px;
+      margin: 20px 0;
     }
 
     .url {
@@ -64,8 +70,7 @@
       border: 2px solid #e0e0e0;
       border-radius: 8px;
       background: #f9f9f9;
-      transition: all 0.3s ease;
-      box-sizing: border-box;
+      transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
       font-family: inherit;
     }
 
@@ -98,19 +103,17 @@
       box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     }
 
-    .btn:hover {
+    .btn:not(:disabled):hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
 
-    .btn:active {
+    .btn:not(:disabled):active {
       transform: translateY(0);
     }
 
-    [is-empty="true"] ~ .btn,
-    [is-invalid="true"] ~ .btn {
+    .btn:disabled {
       cursor: not-allowed;
-      pointer-events: none;
       opacity: 0.5;
       background: linear-gradient(135deg, #ccc 0%, #999 100%);
       box-shadow: none;
@@ -141,6 +144,7 @@
       background: #f8f9fa;
       border-radius: 8px;
       font-size: 13px;
+      overflow-wrap: anywhere;
     }
 
     .example > p {
@@ -173,20 +177,15 @@
       font-weight: 600;
       border-bottom: 1px solid rgba(255, 255, 255, 0.3);
       padding-bottom: 2px;
-      transition: all 0.3s ease;
+      transition: border-color 0.3s ease;
     }
 
     .footer a:hover {
       border-bottom-color: #ffffff;
     }
   </style>
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>GitHub 文件加速</title>
   </head>
-  <body class="flex">
+  <body>
     <div class="card">
       <h1 style="margin: 0 0 30px 0; text-align: center; font-size: 28px; color: #333;">GitHub 文件加速</h1>
       <form
@@ -198,6 +197,7 @@
         style="width: 100%;"
       >
         <label class="block" style="width: 100%; margin-bottom: 10px;">
+          <span style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 600;">GitHub 文件链接</span>
           <input
             class="url"
             name="q"
@@ -208,13 +208,14 @@
             required
           />
         </label>
-        <input class="btn" type="submit" value="下载" />
+        <button class="btn" type="submit" disabled>下载</button>
         <div class="tips">
           <p>
             GitHub 文件链接带不带协议头都可以，支持 release、archive 以及文件，右键复制出来的链接都是符合标准的，更多用法、clone 加速请参考<a
               href="https://hunsh.net/archives/23/"
               style="color: #667eea; text-decoration: none; font-weight: 500;"
               target="_blank"
+              rel="noopener noreferrer"
               >这篇文章</a
             >。
           </p>
@@ -238,22 +239,24 @@
     </div>
     <p class="footer">
       项目使用 Cloudflare CDN 加速，开源于 GitHub
-      <a href="https://github.com/benzBrake/gh-proxy" target="_blank"
+      <a href="https://github.com/benzBrake/gh-proxy" target="_blank" rel="noopener noreferrer"
         >benzBrake/gh-proxy</a
       >
     </p>
     <script>
-      let url = document.querySelector(".url");
+      const url = document.querySelector(".url");
+      const submitButton = document.querySelector(".btn");
       updateAttrs();
       function updateAttrs() {
-        url.parentNode.setAttribute("is-invalid", !url.checkValidity());
+        const isInvalid = !url.checkValidity();
+        url.parentNode.setAttribute("is-invalid", isInvalid);
         url.parentNode.setAttribute("is-empty", url.value === "");
+        submitButton.disabled = isInvalid;
       }
       function toSubmit(e) {
         e.preventDefault();
         window.open(
-          location.href.substr(0, location.href.lastIndexOf("/") + 1) +
-            document.getElementsByName("q")[0].value
+          location.href.slice(0, location.href.lastIndexOf("/") + 1) + url.value
         );
         return false;
       }

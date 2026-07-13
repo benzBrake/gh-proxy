@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-Hans">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>访问被拒绝 - GitHub 文件加速</title>
   <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     html,
     body {
       width: 100%;
@@ -20,7 +31,7 @@
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-start;
       align-items: center;
     }
 
@@ -38,7 +49,7 @@
       padding: 50px 40px;
       max-width: 560px;
       width: 100%;
-      margin: 20px;
+      margin: 20px 0;
       text-align: center;
     }
 
@@ -117,7 +128,7 @@
       font-weight: 600;
       border: none;
       border-radius: 8px;
-      transition: all 0.3s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
       box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
       cursor: pointer;
     }
@@ -144,7 +155,7 @@
       font-weight: 600;
       border-bottom: 1px solid rgba(255, 255, 255, 0.3);
       padding-bottom: 2px;
-      transition: all 0.3s ease;
+      transition: border-color 0.3s ease;
     }
 
     .footer a:hover {
@@ -171,68 +182,65 @@
       font-size: 14px;
       line-height: 1.6;
     }
+
+    @media (min-height: 820px) {
+      body {
+        justify-content: center;
+      }
+    }
   </style>
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>访问被拒绝 - GitHub 文件加速</title>
-  </head>
-  <body class="flex">
-    <div class="card">
-      <div class="icon">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-        </svg>
-      </div>
-      <div class="error-code">403</div>
-      <h1>访问被拒绝</h1>
-      <p class="message">
-        抱歉，您请求的网址在黑名单中，无法通过此代理服务访问。
-      </p>
+</head>
 
-      <div class="url-box">
-        <span class="label">请求的网址：</span>
-        <span id="blocked-url">加载中...</span>
-      </div>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path
+          d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2a8 8 0 0 1 4.9 1.67L5.67 16.9A8 8 0 0 1 12 4Zm0 16a8 8 0 0 1-4.9-1.67L18.33 7.1A8 8 0 0 1 12 20Z" />
+      </svg>
+    </div>
+    <div class="error-code">403</div>
+    <h1>访问被拒绝</h1>
+    <p class="message">
+      抱歉，您请求的网址在黑名单中，无法通过此加速服务访问。
+    </p>
 
-      <div class="reason">
-        <div class="reason-title">⚠️ 为什么被禁止？</div>
-        <div class="reason-text">
-          该网址可能因以下原因被加入黑名单：<br>
-          • 违反服务使用条款<br>
-          • 涉及恶意内容或版权问题<br>
-          • 资源消耗过大影响其他用户<br>
-          • 其他管理员设置的限制
-        </div>
-      </div>
+    <div class="url-box">
+      <span class="label">请求的网址：</span>
+      <span id="blocked-url">加载中...</span>
+    </div>
 
-      <div class="actions">
-        <a href="./" class="btn">返回首页</a>
+    <div class="reason">
+      <div class="reason-title">为什么被禁止？</div>
+      <div class="reason-text">
+        该地址不在加速服务允许访问的范围内。如有疑问，请联系服务管理员。
       </div>
     </div>
 
-    <p class="footer">
-      项目使用 Cloudflare CDN 加速，开源于 GitHub
-      <a href="https://github.com/benzBrake/gh-proxy" target="_blank"
-        >benzBrake/gh-proxy</a
-      >
-    </p>
+    <div class="actions">
+      <a href="./" class="btn">返回首页</a>
+    </div>
+  </div>
 
-    <script>
-      // 获取被阻止的 URL
-      const blockedUrl = new URLSearchParams(window.location.search).get('url') ||
-                         new URLSearchParams(window.location.search).get('q') ||
-                         document.referrer ||
-                         '未知网址';
-      document.getElementById('blocked-url').textContent = blockedUrl;
+  <p class="footer">
+    项目使用 Cloudflare CDN 加速，开源于 GitHub
+    <a href="https://github.com/benzBrake/gh-proxy" target="_blank" rel="noopener noreferrer">benzBrake/gh-proxy</a>
+  </p>
 
-      // 如果有错误信息，显示错误信息
-      const errorMessage = new URLSearchParams(window.location.search).get('message');
-      if (errorMessage) {
-        const messageElement = document.querySelector('.message');
-        messageElement.textContent = decodeURIComponent(errorMessage);
-      }
-    </script>
-  </body>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const blockedUrl = params.get('url') ||
+      params.get('q') ||
+      document.referrer ||
+      '未知网址';
+    document.getElementById('blocked-url').textContent = blockedUrl;
+
+    const errorMessage = params.get('message');
+    if (errorMessage) {
+      const messageElement = document.querySelector('.message');
+      messageElement.textContent = errorMessage;
+    }
+  </script>
+</body>
+
 </html>
