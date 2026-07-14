@@ -18,10 +18,26 @@ const FORWARDED_REQUEST_HEADERS = new Set([
     'x-github-api-version',
 ])
 
-function sanitizeRequestHeaders(headers) {
+function isSecureGitHubApiUrl(targetUrl) {
+    if (!targetUrl) return false
+
+    try {
+        const url = targetUrl instanceof URL ? targetUrl : new URL(targetUrl)
+        return url.protocol.toLowerCase() === 'https:' &&
+            url.hostname.toLowerCase() === 'api.github.com' &&
+            (url.port === '' || url.port === '443')
+    } catch (err) {
+        return false
+    }
+}
+
+function sanitizeRequestHeaders(headers, targetUrl) {
+    const allowAuthorization = isSecureGitHubApiUrl(targetUrl)
     const sanitized = new Headers()
     for (const [name, value] of headers) {
-        if (FORWARDED_REQUEST_HEADERS.has(name.toLowerCase()))
+        const normalizedName = name.toLowerCase()
+        if (FORWARDED_REQUEST_HEADERS.has(normalizedName) ||
+            (normalizedName === 'authorization' && allowAuthorization))
             sanitized.set(name, value)
     }
     return sanitized
@@ -264,13 +280,12 @@ function httpHandler(req, pathname) {
         return new Response(null, PREFLIGHT_INIT)
     }
 
-    const reqHdrNew = sanitizeRequestHeaders(reqHdrRaw)
-
     let urlStr = pathname
     if (urlStr.search(/^https?:\/\//) !== 0) {
         urlStr = 'https://' + urlStr
     }
     const urlObj = newUrl(urlStr)
+    const reqHdrNew = sanitizeRequestHeaders(reqHdrRaw, urlObj)
 
     /** @type {RequestInit} */
     const reqInit = {
@@ -290,7 +305,7 @@ function httpHandler(req, pathname) {
  */
 async function proxy(urlObj, reqInit) {
     // Reapply the allowlist at every redirect boundary.
-    reqInit.headers = sanitizeRequestHeaders(reqInit.headers)
+    reqInit.headers = sanitizeRequestHeaders(reqInit.headers, urlObj)
     const res = await fetch(urlObj.href, reqInit)
     const resHdrOld = res.headers
     const resHdrNew = new Headers(resHdrOld)

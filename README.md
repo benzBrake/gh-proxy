@@ -50,6 +50,20 @@ github release、archive 以及项目文件的加速项目，支持 clone，有 
 
 - gist：https://gist.githubusercontent.com/cielpy/351557e6e465c12986419ac5a4dd2568/raw/cmd.py
 
+### GitHub API Token 透传
+
+访问 `https://api.github.com` 时，可以通过标准 `Authorization` 请求头携带自己的 GitHub Token：
+
+```bash
+curl \
+  --header 'Authorization: Bearer YOUR_GITHUB_TOKEN' \
+  'https://your-proxy.example/https://api.github.com/repos/owner/repo/releases'
+```
+
+Token 会原样转发给 GitHub，使请求使用对应账号或 Token 的 API 配额。服务不会在日志中输出或持久化 Token；当请求使用 HTTP、访问非 API 地址，或 GitHub API 重定向到 `codeload.github.com` 等其他域名时，认证头会被移除。
+
+代理服务的运营者仍能接触进入服务的请求头，因此不要向不受信任的公共代理发送 Token，建议自行部署。Token 失效、权限不足或自身配额耗尽时，GitHub 仍会返回相应的 `401` 或 `403`。
+
 ## cf worker 版本部署
 
 首页：https://workers.cloudflare.com

@@ -301,7 +301,16 @@ def build_requests_proxy(proxy_url):
     }
 
 def is_github_api_url(url):
-    return urlparse(url).netloc.lower() == 'api.github.com'
+    parsed = urlparse(url)
+    try:
+        port = parsed.port
+    except ValueError:
+        return False
+    return (
+        parsed.hostname is not None
+        and parsed.hostname.lower() == 'api.github.com'
+        and port in (None, 443)
+    )
 
 def is_retryable_method(method):
     return method.upper() in {'GET', 'HEAD', 'OPTIONS'}
@@ -412,11 +421,11 @@ def handler(u):
 
 def proxy(u, allow_redirects=False):
     headers = {}
-    r_headers = sanitize_request_headers(request.headers)
     try:
         url = u + request.url.replace(request.base_url, '', 1)
         if url.startswith('https:/') and not url.startswith('https://'):
             url = 'https://' + url[7:]
+        r_headers = sanitize_request_headers(request.headers, url)
 
         logging.info('proxy: %s' % url)
         if is_github_api_url(url):

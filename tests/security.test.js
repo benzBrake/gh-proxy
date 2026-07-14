@@ -30,7 +30,10 @@ test('worker strips credentials and preserves download headers', () => {
         range: 'bytes=100-200',
         'x-github-api-version': '2022-11-28',
     })
-    const sanitized = context.testSanitizeRequestHeaders(input)
+    const sanitized = context.testSanitizeRequestHeaders(
+        input,
+        new URL('https://github.com/owner/repo/archive/main.zip'),
+    )
 
     assert.equal(sanitized.get('authorization'), null)
     assert.equal(sanitized.get('cookie'), null)
@@ -38,6 +41,53 @@ test('worker strips credentials and preserves download headers', () => {
     assert.equal(sanitized.get('x-forwarded-for'), null)
     assert.equal(sanitized.get('range'), 'bytes=100-200')
     assert.equal(sanitized.get('x-github-api-version'), '2022-11-28')
+})
+
+test('worker forwards authorization only to the secure GitHub API origin', () => {
+    const input = new Headers({ authorization: 'Bearer secret' })
+
+    const apiHeaders = context.testSanitizeRequestHeaders(
+        input,
+        new URL('https://api.github.com/repos/owner/repo/releases'),
+    )
+    const httpHeaders = context.testSanitizeRequestHeaders(
+        input,
+        new URL('http://api.github.com/repos/owner/repo/releases'),
+    )
+    const alternatePortHeaders = context.testSanitizeRequestHeaders(
+        input,
+        new URL('https://api.github.com:8443/repos/owner/repo/releases'),
+    )
+
+    assert.equal(apiHeaders.get('authorization'), 'Bearer secret')
+    assert.equal(httpHeaders.get('authorization'), null)
+    assert.equal(alternatePortHeaders.get('authorization'), null)
+})
+
+test('worker strips authorization when a GitHub API response redirects off origin', async () => {
+    const authorizationHeaders = []
+    context.fetch = async (url, init) => {
+        authorizationHeaders.push(new Headers(init.headers).get('authorization'))
+        if (String(url).startsWith('https://api.github.com/')) {
+            return new Response(null, {
+                status: 302,
+                headers: { location: 'https://codeload.github.com/owner/repo/zip/main' },
+            })
+        }
+        return new Response('archive')
+    }
+
+    const response = await context.testProxy(
+        new URL('https://api.github.com/repos/owner/repo/zipball/main'),
+        {
+            method: 'GET',
+            headers: new Headers({ authorization: 'Bearer secret' }),
+            redirect: 'manual',
+        },
+    )
+
+    assert.equal(await response.text(), 'archive')
+    assert.deepEqual(authorizationHeaders, ['Bearer secret', null])
 })
 
 test('worker serves the configured frontend assets', async () => {
