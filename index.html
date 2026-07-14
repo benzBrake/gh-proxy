@@ -183,6 +183,66 @@
     .footer a:hover {
       border-bottom-color: #ffffff;
     }
+
+    .commands {
+      width: 100%;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cmd-group {
+      background: #f8f9fa;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e9ecef;
+    }
+
+    .cmd-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px;
+      background: #f1f3f5;
+      border-bottom: 1px solid #e9ecef;
+    }
+
+    .cmd-header span {
+      font-size: 13px;
+      font-weight: 600;
+      color: #495057;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .copy-btn {
+      font-size: 12px;
+      padding: 3px 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+      font-family: inherit;
+    }
+
+    .copy-btn:hover {
+      opacity: 0.85;
+    }
+
+    .cmd-block {
+      margin: 0;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      background: #212529;
+      color: #e9ecef;
+      overflow-x: auto;
+      white-space: pre;
+      word-break: keep-all;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
   </style>
   </head>
   <body>
@@ -203,12 +263,28 @@
             name="q"
             type="text"
             placeholder="键入 Github 文件链接"
-            pattern="^((https|http):\/\/)?(github\.com\/.+?\/.+?\/(?:releases|archive|blob|raw|suites)|(api\.github\.com\/(?:repos|users))|((?:raw|gist)\.(?:githubusercontent|github)\.com))\/.+$"
+            pattern="^(https?:\/\/)?(?:github\.com\/[^/?#]+\/[^/?#]+(?:\/.*)?|api\.github\.com\/(?:repos|users)\/.+|(?:raw|gist)\.(?:githubusercontent|github)\.com\/.+)$"
             oninput="updateAttrs()"
             required
           />
         </label>
         <button class="btn" type="submit" disabled>下载</button>
+        <div class="commands" id="commands">
+          <div class="cmd-group" id="curl-group">
+            <div class="cmd-header">
+              <span>curl</span>
+              <button class="copy-btn" type="button" onclick="copyCmd('curl-cmd', this)">复制</button>
+            </div>
+            <pre class="cmd-block" id="curl-cmd"></pre>
+          </div>
+          <div class="cmd-group" id="git-group" style="display: none;">
+            <div class="cmd-header">
+              <span>git clone</span>
+              <button class="copy-btn" type="button" onclick="copyCmd('git-cmd', this)">复制</button>
+            </div>
+            <pre class="cmd-block" id="git-cmd"></pre>
+          </div>
+        </div>
         <div class="tips">
           <p>
             GitHub 文件链接带不带协议头都可以，支持 release、archive 以及文件，右键复制出来的链接都是符合标准的，更多用法、clone 加速请参考<a
@@ -246,18 +322,68 @@
     <script>
       const url = document.querySelector(".url");
       const submitButton = document.querySelector(".btn");
+      const downloadUrlRe = /^(?:https?:\/\/)?(?:github\.com\/[^/?#]+\/[^/?#]+\/(?:releases|archive|blob|raw|suites)\/.+|api\.github\.com\/(?:repos|users)\/.+|(?:raw|gist)\.(?:githubusercontent|github)\.com\/.+)$/;
+      const repositoryUrlRe = /^(?:https?:\/\/)?github\.com\/[^/?#]+\/[^/?#]+\/?$/;
       updateAttrs();
       function updateAttrs() {
-        const isInvalid = !url.checkValidity();
+        const val = normalizeUrl(url.value);
+        const isDownloadUrl = downloadUrlRe.test(val);
+        const isRepositoryUrl = repositoryUrlRe.test(val);
+        const isInvalid = val !== "" && !isDownloadUrl && !isRepositoryUrl;
         url.parentNode.setAttribute("is-invalid", isInvalid);
-        url.parentNode.setAttribute("is-empty", url.value === "");
-        submitButton.disabled = isInvalid;
+        url.parentNode.setAttribute("is-empty", val === "");
+        submitButton.disabled = !isDownloadUrl;
+        updateCommands(val, isDownloadUrl, isRepositoryUrl);
+      }
+      function getBaseUrl() {
+        return location.origin + location.pathname.replace(/[^/]*$/, "");
+      }
+      function normalizeUrl(raw) {
+        return raw.replace(/^\s+|\s+$/g, "");
+      }
+      function updateCommands(val, isDownloadUrl, isRepositoryUrl) {
+        const commands = document.getElementById("commands");
+        const curlGroup = document.getElementById("curl-group");
+        const gitGroup = document.getElementById("git-group");
+        const curlCmd = document.getElementById("curl-cmd");
+        const gitCmd = document.getElementById("git-cmd");
+
+        if (!isDownloadUrl && !isRepositoryUrl) {
+          commands.style.display = "none";
+          return;
+        }
+        commands.style.display = "flex";
+        const proxyUrl = getBaseUrl() + val;
+        if (isDownloadUrl) {
+          curlGroup.style.display = "block";
+          curlCmd.textContent = "curl -O " + proxyUrl;
+        } else {
+          curlGroup.style.display = "none";
+        }
+
+        if (isRepositoryUrl) {
+          gitGroup.style.display = "block";
+          gitCmd.textContent = "git clone " + proxyUrl;
+        } else {
+          gitGroup.style.display = "none";
+        }
+      }
+      function copyCmd(preId, btn) {
+        const text = document.getElementById(preId).textContent;
+        navigator.clipboard.writeText(text).then(function () {
+          var original = btn.textContent;
+          btn.textContent = "已复制";
+          setTimeout(function () {
+            btn.textContent = original;
+          }, 1500);
+        });
       }
       function toSubmit(e) {
         e.preventDefault();
-        window.open(
-          location.href.slice(0, location.href.lastIndexOf("/") + 1) + url.value
-        );
+        const val = normalizeUrl(url.value);
+        if (downloadUrlRe.test(val)) {
+          window.open(getBaseUrl() + val);
+        }
         return false;
       }
     </script>
