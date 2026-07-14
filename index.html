@@ -81,6 +81,61 @@
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
+    .api-key-field {
+      width: 100%;
+      margin-top: 8px;
+      padding: 14px;
+      border: 1px solid #e4e5f1;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.07), rgba(118, 75, 162, 0.04));
+    }
+
+    .api-key-field[hidden] {
+      display: none;
+    }
+
+    .api-key-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #3f3f4d;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .api-key-control {
+      position: relative;
+    }
+
+    .api-key-input {
+      padding-right: 72px;
+    }
+
+    .key-toggle {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: #667eea;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .key-toggle:hover {
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .key-hint {
+      margin: 8px 2px 0;
+      color: #6d6d7c;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
     :not([is-empty="true"]) > .url:invalid {
       border-color: #dc3545;
     }
@@ -268,6 +323,31 @@
             required
           />
         </label>
+        <div class="api-key-field" id="api-key-field" hidden>
+          <label class="api-key-label" for="api-key">GitHub API Key（可选）</label>
+          <div class="api-key-control">
+            <input
+              class="url api-key-input"
+              id="api-key"
+              type="password"
+              placeholder="github_pat_... 或 ghp_..."
+              autocomplete="off"
+              spellcheck="false"
+              oninput="updateAttrs()"
+              disabled
+            />
+            <button
+              class="key-toggle"
+              id="key-toggle"
+              type="button"
+              aria-controls="api-key"
+              aria-label="显示 API key"
+              aria-pressed="false"
+              onclick="toggleApiKey()"
+            >显示</button>
+          </div>
+          <p class="key-hint">Key 仅用于生成下方的 curl 命令，不会写入链接或保存在浏览器中。</p>
+        </div>
         <button class="btn" type="submit" disabled>下载</button>
         <div class="commands" id="commands">
           <div class="cmd-group" id="curl-group">
@@ -322,18 +402,25 @@
     <script>
       const url = document.querySelector(".url");
       const submitButton = document.querySelector(".btn");
+      const apiKeyField = document.getElementById("api-key-field");
+      const apiKeyInput = document.getElementById("api-key");
+      const keyToggle = document.getElementById("key-toggle");
       const downloadUrlRe = /^(?:https?:\/\/)?(?:github\.com\/[^/?#]+\/[^/?#]+\/(?:releases|archive|blob|raw|suites)\/.+|api\.github\.com\/(?:repos|users)\/.+|(?:raw|gist)\.(?:githubusercontent|github)\.com\/.+)$/;
       const repositoryUrlRe = /^(?:https?:\/\/)?github\.com\/[^/?#]+\/[^/?#]+\/?$/;
+      const apiUrlRe = /^(?:https?:\/\/)?api\.github\.com\/(?:repos|users)\/.+$/;
       updateAttrs();
       function updateAttrs() {
         const val = normalizeUrl(url.value);
         const isDownloadUrl = downloadUrlRe.test(val);
         const isRepositoryUrl = repositoryUrlRe.test(val);
+        const isApiUrl = apiUrlRe.test(val);
         const isInvalid = val !== "" && !isDownloadUrl && !isRepositoryUrl;
         url.parentNode.setAttribute("is-invalid", isInvalid);
         url.parentNode.setAttribute("is-empty", val === "");
         submitButton.disabled = !isDownloadUrl;
-        updateCommands(val, isDownloadUrl, isRepositoryUrl);
+        apiKeyField.hidden = !isApiUrl;
+        apiKeyInput.disabled = !isApiUrl;
+        updateCommands(val, isDownloadUrl, isRepositoryUrl, isApiUrl);
       }
       function getBaseUrl() {
         return location.origin + location.pathname.replace(/[^/]*$/, "");
@@ -341,7 +428,7 @@
       function normalizeUrl(raw) {
         return raw.replace(/^\s+|\s+$/g, "");
       }
-      function updateCommands(val, isDownloadUrl, isRepositoryUrl) {
+      function updateCommands(val, isDownloadUrl, isRepositoryUrl, isApiUrl) {
         const commands = document.getElementById("commands");
         const curlGroup = document.getElementById("curl-group");
         const gitGroup = document.getElementById("git-group");
@@ -356,7 +443,13 @@
         const proxyUrl = getBaseUrl() + val;
         if (isDownloadUrl) {
           curlGroup.style.display = "block";
-          curlCmd.textContent = "curl -O " + proxyUrl;
+          if (isApiUrl) {
+            const apiKey = apiKeyInput.value.trim();
+            const authorization = apiKey ? " -H \"Authorization: Bearer " + apiKey + "\"" : "";
+            curlCmd.textContent = "curl -L" + authorization + " " + proxyUrl;
+          } else {
+            curlCmd.textContent = "curl -O " + proxyUrl;
+          }
         } else {
           curlGroup.style.display = "none";
         }
@@ -377,6 +470,14 @@
             btn.textContent = original;
           }, 1500);
         });
+      }
+      function toggleApiKey() {
+        const shouldShow = apiKeyInput.type === "password";
+        apiKeyInput.type = shouldShow ? "text" : "password";
+        keyToggle.textContent = shouldShow ? "隐藏" : "显示";
+        keyToggle.setAttribute("aria-label", shouldShow ? "隐藏 API key" : "显示 API key");
+        keyToggle.setAttribute("aria-pressed", String(shouldShow));
+        apiKeyInput.focus();
       }
       function toSubmit(e) {
         e.preventDefault();
